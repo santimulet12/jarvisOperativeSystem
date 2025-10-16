@@ -1,0 +1,23 @@
+# Dependencias del proyecto: Detector de Gestos con Manos
+# Instalar con: pip install -r requirements.txt
+
+# Visión por computadora y procesamiento de imágenes
+opencv-python==4.8.1.78
+
+# Detección y seguimiento de manos
+mediapipe==0.10.8
+
+# Automatización de GUI (teclado y mouse)
+PyAutoGUI==0.9.54
+
+# Dependencias adicionales de PyAutoGUI (Linux)
+# Descomentar si estás en Linux:
+# python3-xlib==0.15
+# python3-dev
+
+# Dependencias del sistema (ya incluidas en Python estándar)
+# webbrowser - incluido en Python
+# os - incluido en Python
+# platform - incluido en Python
+# subprocess - incluido en Python
+# time - incluido en Python
