@@ -3,13 +3,14 @@ import mediapipe as mp
 import webbrowser
 import pyautogui
 import time
-import os
-import platform
-import subprocess
+import platform, os, subprocess
 
 # Inicializar MediaPipe
 mp_manos = mp.solutions.hands
 mp_dibujo = mp.solutions.drawing_utils
+
+# Detectar sistema operativo
+SISTEMA_OPERATIVO = platform.system()  # 'Windows', 'Linux', 'Darwin' (macOS)
 
 # Constantes
 DELAY_SEGUNDOS = 3
@@ -66,6 +67,15 @@ class ManejadorSenales:
         pulgar = puntos_mano.landmark[self.PUNTAS['pulgar']].y > puntos_mano.landmark[self.PUNTAS['indice']].y
 
         return (indice_extendido and medio_doblado and anular_doblado and menique_doblado and pulgar)
+    
+    def rock(self, puntos_mano):
+        """Detecta seña de Rock"""
+        # Todos los dedos doblados excepto el pulgar
+        dedos_doblados = all(self._esta_dedo_doblado(puntos_mano, dedo) 
+                            for dedo in ['medio', 'anular'])
+        
+        return dedos_doblados
+    
 
 class FuncionesSenal:
     """Ejecuta funciones asociadas a cada gesto"""
@@ -73,8 +83,9 @@ class FuncionesSenal:
     def __init__(self):
         self.alt_tab_activo = False
         self.tiempo_ultimo_tab = 0
-        self.TIEMPO_MANTENER_ALT = 1.0  # Segundos para mantener Alt presionado
-    
+        self.TIEMPO_MANTENER_ALT = 1.0  # Segundos para mantener Alt presionada
+        self.ventana_maximizada = True  # Estado inicial (asumimos maximizada)
+
     def funcion_es_paz(self):
         """Abre Google en el navegador"""
         webbrowser.open("https://www.google.com")
@@ -94,6 +105,18 @@ class FuncionesSenal:
         
         self.tiempo_ultimo_tab = tiempo_actual
     
+    def funcion_rock(self):
+        """Maximiza o minimiza la ventana actual"""
+        # Usar Win+Up para maximizar o Win+Down para restaurar/minimizar
+        if self.ventana_maximizada:
+            # Restaurar ventana
+            pyautogui.hotkey('win', 'down')
+            self.ventana_maximizada = False
+        else:
+            # Maximizar ventana
+            pyautogui.hotkey('win', 'up')
+            self.ventana_maximizada = True
+
     def liberar_alt_tab(self):
         """Libera la tecla Alt si ha pasado suficiente tiempo"""
         if self.alt_tab_activo:
@@ -160,6 +183,11 @@ class DetectorGestos:
                 'detector': self.manejador_senales.indice_levantado,
                 'funcion': self.funciones_senal.funcion_indice,
                 'mensaje': 'El indice está levantado'
+            },
+            'rock': {
+                'detector': self.manejador_senales.rock,
+                'funcion': self.funciones_senal.funcion_rock,
+                'mensaje': 'Maximizar/Restaurar ventana'
             }
         }
     
