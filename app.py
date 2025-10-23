@@ -3,13 +3,14 @@ import mediapipe as mp
 import webbrowser
 import pyautogui
 import time
-import os
-import platform
-import subprocess
+import platform, os, subprocess
 
 # Inicializar MediaPipe
 mp_manos = mp.solutions.hands
 mp_dibujo = mp.solutions.drawing_utils
+
+# Detectar sistema operativo
+SISTEMA_OPERATIVO = platform.system()  # 'Windows', 'Linux', 'Darwin' (macOS)
 
 # Constantes
 DELAY_SEGUNDOS = 3
@@ -66,6 +67,15 @@ class ManejadorSenales:
         pulgar = puntos_mano.landmark[self.PUNTAS['pulgar']].y > puntos_mano.landmark[self.PUNTAS['indice']].y
 
         return (indice_extendido and medio_doblado and anular_doblado and menique_doblado and pulgar)
+    
+    def rock(self, puntos_mano):
+        """Detecta seña de Rock"""
+        # Todos los dedos doblados excepto el pulgar
+        dedos_doblados = all(self._esta_dedo_doblado(puntos_mano, dedo) 
+                            for dedo in ['medio', 'anular'])
+        
+        return dedos_doblados
+    
 
 class FuncionesSenal:
     """Ejecuta funciones asociadas a cada gesto"""
@@ -73,8 +83,10 @@ class FuncionesSenal:
     def __init__(self):
         self.alt_tab_activo = False
         self.tiempo_ultimo_tab = 0
-        self.TIEMPO_MANTENER_ALT = 1.0  # Segundos para mantener Alt presionado
-    
+        self.TIEMPO_MANTENER_ALT = 1.0  # Segundos para mantener Alt presionada
+        self.ventana_maximizada = False  # Estado inicial (asumimos maximizada)
+        self.sistema_operativo = SISTEMA_OPERATIVO
+        
     def funcion_es_paz(self):
         """Abre Google en el navegador"""
         webbrowser.open("https://www.google.com")
@@ -94,6 +106,76 @@ class FuncionesSenal:
         
         self.tiempo_ultimo_tab = tiempo_actual
     
+    def _maximizar_ventana_linux(self):
+        """Maximiza la ventana activa en Linux"""
+        try:
+            result = subprocess.run(['xdotool', 'getactivewindow'], 
+                                  capture_output=True, text=True, timeout=1)
+            window_id = result.stdout.strip()
+            
+            if window_id:
+                subprocess.run(['wmctrl', '-i', '-r', window_id, '-b', 
+                              'add,maximized_vert,maximized_horz'], timeout=1)
+                return True
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            print(f"Error al maximizar (Linux): {e}")
+            return False
+        return False
+    
+    def _minimizar_ventana_linux(self):
+        """Minimiza la ventana activa en Linux"""
+        try:
+            result = subprocess.run(['xdotool', 'getactivewindow'], 
+                                  capture_output=True, text=True, timeout=1)
+            window_id = result.stdout.strip()
+            
+            if window_id:
+                subprocess.run(['xdotool', 'windowminimize', window_id], timeout=1)
+                return True
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            print(f"Error al minimizar (Linux): {e}")
+            return False
+        return False
+    
+    def _maximizar_ventana_windows(self):
+        """Maximiza la ventana activa en Windows"""
+        try:
+            pyautogui.hotkey('win', 'up')
+            return True
+        except Exception as e:
+            print(f"Error al maximizar (Windows): {e}")
+            return False
+    
+    def _minimizar_ventana_windows(self):
+        """Minimiza la ventana activa en Windows"""
+        try:
+            pyautogui.hotkey('win', 'down')
+            pyautogui.hotkey('win', 'down')  # Doble para asegurar minimizar
+            return True
+        except Exception as e:
+            print(f"Error al minimizar (Windows): {e}")
+            return False
+    
+    def funcion_rock(self):
+        """Maximiza o minimiza la ventana actual según el sistema operativo"""
+        exito = False
+        
+        if self.sistema_operativo == "Linux":
+            if self.ventana_maximizada:
+                exito = self._minimizar_ventana_linux()
+            else:
+                exito = self._maximizar_ventana_linux()
+        
+        elif self.sistema_operativo == "Windows":
+            if self.ventana_maximizada:
+                exito = self._minimizar_ventana_windows()
+            else:
+                exito = self._maximizar_ventana_windows()
+
+        # Solo cambiar el estado si la operación fue exitosa
+        if exito:
+            self.ventana_maximizada = not self.ventana_maximizada
+
     def liberar_alt_tab(self):
         """Libera la tecla Alt si ha pasado suficiente tiempo"""
         if self.alt_tab_activo:
@@ -103,15 +185,8 @@ class FuncionesSenal:
                 self.alt_tab_activo = False
     
     def funcion_indice(self):
-
-        ruta = None
-
-        """
-        Abre el explorador de archivos del sistema operativo.
-        """
-        # Si no se proporciona ruta
-        if ruta is None:
-            ruta = os.path.expanduser("~")
+        """Abre el explorador de archivos del sistema operativo."""
+        ruta = os.path.expanduser("~")
         
         # Verificar que la ruta existe
         if not os.path.exists(ruta):
@@ -128,12 +203,11 @@ class FuncionesSenal:
             elif sistema == "Linux":
                 # En Linux usar xdg-open (funciona con la mayoría de entornos de escritorio)
                 subprocess.run(["xdg-open", ruta], check=True)
-                
+
             print(f"Explorador abierto en: {ruta}")
             
         except Exception as e:
             print(f"Error al abrir el explorador: {e}")
-
 
 
 class DetectorGestos:
@@ -159,7 +233,12 @@ class DetectorGestos:
             'indice_levantado': {
                 'detector': self.manejador_senales.indice_levantado,
                 'funcion': self.funciones_senal.funcion_indice,
-                'mensaje': 'El indice está levantado'
+                'mensaje': 'Abriendo explorador'
+            },
+            'rock': {
+                'detector': self.manejador_senales.rock,
+                'funcion': self.funciones_senal.funcion_rock,
+                'mensaje': 'Maximizar/Minimizar ventana'
             }
         }
     
@@ -200,8 +279,37 @@ class DetectorGestos:
         return False
 
 
+def verificar_dependencias_linux():
+    """Verifica que las dependencias necesarias estén instaladas en Linux"""
+    if SISTEMA_OPERATIVO != "Linux":
+        return True
+    
+    herramientas_faltantes = []
+    
+    try:
+        subprocess.run(['wmctrl', '--version'], capture_output=True, check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        herramientas_faltantes.append('wmctrl')
+    
+    try:
+        subprocess.run(['xdotool', '--version'], capture_output=True, check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        herramientas_faltantes.append('xdotool')
+    
+    if herramientas_faltantes:
+        print("⚠️  ADVERTENCIA: Faltan dependencias para controlar ventanas en Linux:")
+        print(f"   Instala: sudo apt install {' '.join(herramientas_faltantes)}")
+        print("   El gesto 'rock' no funcionará hasta instalar estas herramientas.\n")
+        return False
+    
+    return True
+
+
 def main():
     """Función principal"""
+    print(f"Sistema operativo detectado: {SISTEMA_OPERATIVO}")
+    verificar_dependencias_linux()
+    
     # Iniciar cámara
     captura = cv2.VideoCapture(0)
     
@@ -211,9 +319,7 @@ def main():
     
     detector = DetectorGestos()
     
-    print("Presiona 'q' para salir")
-    print("Gestos disponibles:")
-    
+    print("\nPresiona 'q' para salir")
     with mp_manos.Hands(
         min_detection_confidence=CONFIANZA_MINIMA_DETECCION,
         min_tracking_confidence=CONFIANZA_MINIMA_SEGUIMIENTO
