@@ -22,9 +22,6 @@ Sistema inteligente de reconocimiento de gestos de manos en tiempo real que perm
 - [Arquitectura](#-arquitectura)
 - [Solución de Problemas](#-solución-de-problemas)
 - [Rendimiento](#-rendimiento)
-- [Contribuciones](#-contribuciones)
-- [Roadmap](#-roadmap)
-- [Licencia](#-licencia)
 
 ---
 
