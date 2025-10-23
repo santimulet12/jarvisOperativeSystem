@@ -539,4 +539,4 @@ pip install opencv-python
 
 **Hecho con ❤️ y Python**
 
-*Última actualización: Octubre 2024*
+*Última actualización: Octubre 2025*
