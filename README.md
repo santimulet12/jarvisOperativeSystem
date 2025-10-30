@@ -56,7 +56,7 @@ Sistema inteligente de reconocimiento de gestos de manos en tiempo real que perm
 
 ## 🎬 Demo y Capturas
 
-![testimage.png]
+![imagen de funcionamiento](testimage.png)
 
 **Ejemplo de uso típico:**
 1. Usuario muestra señal de paz → Google se abre automáticamente
