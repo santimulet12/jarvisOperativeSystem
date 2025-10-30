@@ -228,8 +228,8 @@ sudo apt-get install -y python3-xlib  # Para PyAutoGUI
 sudo apt-get install -y wmctrl xdotool
 
 # 4. Clonar repositorio y configurar
-git clone https://github.com/tu-usuario/detector-gestos-manos.git
-cd detector-gestos-manos
+git clone https://github.com/santimulet12/jarvisOperativeSystem.git
+cd jarvisOperativeSystem
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -270,8 +270,8 @@ python --version
 # Debe mostrar Python 3.8+
 
 # 3. Clonar o descargar el repositorio
-git clone https://github.com/tu-usuario/detector-gestos-manos.git
-cd detector-gestos-manos
+git clone https://github.com/santimulet12/jarvisOperativeSystem.git
+cd jarvisOperativeSystem
 
 # 4. Crear entorno virtual
 python -m venv venv
@@ -319,7 +319,7 @@ PyAutoGUI==0.9.54
 
 ```bash
 # Asegurarse de estar en el directorio del proyecto
-cd detector-gestos-manos
+cd jarvisOperativeSystem
 
 # Activar entorno virtual si está usando uno
 source venv/bin/activate  # Linux/Mac
@@ -871,10 +871,6 @@ Incluye:
 
 <div align="center">
 
-**Hecho con ❤️ y Python**
-
 [⬆ Volver arriba](#-sistema-de-detección-de-gestos-con-manos)
-
-*Última actualización: Octubre 2025 | Versión 1.0*
 
 </div>
