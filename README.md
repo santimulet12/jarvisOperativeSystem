@@ -189,8 +189,8 @@ anular: landmark[16].y >= landmark[13].y ✓
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/detector-gestos-manos.git
-cd detector-gestos-manos
+git clone https://github.com/santimulet12/jarvisOperativeSystem.git
+cd jarvisOperativeSystem
 
 # 2. Crear entorno virtual (recomendado)
 python -m venv venv
